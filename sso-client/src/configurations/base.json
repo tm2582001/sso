@@ -1,0 +1,6 @@
+{
+    "application": {
+        "loginUrl": "http://localhost:8000" ,
+        "sessionKey": "this-will-be-a-very-long-key"
+    }
+}
