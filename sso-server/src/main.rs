@@ -1,13 +1,17 @@
-use actix_web::{web, App, HttpResponse, HttpServer};
 use actix_web::http::header::ContentType;
-use tera::{Tera, Context};
+use actix_web::{App, HttpResponse, HttpServer, web};
+use env_logger::Env;
+use tera::{Context, Tera};
 
+use sso_server::routes::v1_routes;
 
-async fn hello_world( tera: web::Data<Tera>)->HttpResponse {
+async fn hello_world(tera: web::Data<Tera>) -> HttpResponse {
     let context = Context::new();
     let html = tera.render("index.html", &context).unwrap();
 
-    HttpResponse::Ok().content_type(ContentType::html()).body(html)
+    HttpResponse::Ok()
+        .content_type(ContentType::html())
+        .body(html)
 }
 
 #[tokio::main]
@@ -20,13 +24,21 @@ async fn main() -> Result<(), std::io::Error> {
         }
     };
 
-    HttpServer::new(move || App::new()
-        .app_data(tera.clone())
-    .route("/", web::get().to(hello_world)))
-        .bind("127.0.0.1:8000")?
-        .run()
-        .await?;
-    println!("Server started at http://localhost:8000");
+    env_logger::init_from_env(Env::default().default_filter_or("info"));
+
+    HttpServer::new(move || {
+        App::new()
+            .app_data(tera.clone())
+            .wrap(actix_web::middleware::Logger::default())
+            .route("/", web::get().to(hello_world))
+            .service(
+                web::scope("/v1")
+                    .configure(v1_routes)
+            )
+    })
+    .bind("127.0.0.1:8000")?
+    .run()
+    .await?;
 
     Ok(())
 }

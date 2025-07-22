@@ -7,4 +7,5 @@ edition = "2024"
 actix-web = "4"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 tera = "1"
+env_logger = "0.11"
 
