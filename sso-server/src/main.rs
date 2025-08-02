@@ -1,12 +1,15 @@
-use actix_web::http::header::ContentType;
-use actix_web::{App, HttpResponse, HttpServer, web};
-use actix_web::cookie::Key;
 use actix_session::SessionMiddleware;
 use actix_session::storage::CookieSessionStore;
+use actix_web::cookie::Key;
+use actix_web::http::header::ContentType;
+use actix_web::{App, HttpResponse, HttpServer, web};
 use env_logger::Env;
 use tera::{Context, Tera};
 
+use std::env;
+
 use sso_server::routes::v1_routes;
+use sso_server::models::TokenCache;
 
 async fn hello_world(tera: web::Data<Tera>) -> HttpResponse {
     let context = Context::new();
@@ -19,6 +22,14 @@ async fn hello_world(tera: web::Data<Tera>) -> HttpResponse {
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
+
+    let env = env::var("RUST_ENV").unwrap_or_else(|_| "development".into());
+
+    if env == "development" {
+        dotenvy::dotenv().ok(); // Only load .env file if in dev
+        println!("Loaded .env for development");
+    }
+
     let tera = match Tera::new("src/templates/**/*.html") {
         Ok(t) => web::Data::new(t),
         Err(e) => {
@@ -31,20 +42,20 @@ async fn main() -> Result<(), std::io::Error> {
 
     let secret_key = Key::generate();
 
+    let sso_cache = TokenCache::build_shared();
+    let sso_cache = web::Data::new(sso_cache);
 
     HttpServer::new(move || {
         App::new()
             .app_data(tera.clone())
+            .app_data(sso_cache.clone())
             .wrap(actix_web::middleware::Logger::default())
             .wrap(SessionMiddleware::new(
                 CookieSessionStore::default(),
                 secret_key.clone(),
             ))
             .route("/", web::get().to(hello_world))
-            .service(
-                web::scope("/v1")
-                    .configure(v1_routes)
-            )
+            .service(web::scope("/v1").configure(v1_routes))
     })
     .bind("127.0.0.1:8000")?
     .run()

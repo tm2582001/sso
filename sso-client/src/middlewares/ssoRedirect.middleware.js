@@ -19,7 +19,7 @@ async function ssoRedirect(req, res, next){
 
         const response = await fetch(`${jwtUrl}?ssoToken=${ssoToken}`, {
             headers: {
-                Authorization: "Bearer 123456"
+                Authorization: "Bearer 1234"
             }
         });
 
@@ -35,6 +35,7 @@ async function ssoRedirect(req, res, next){
         if(error) {
             return next(error);
         }
+
         req.session.user = payload;
 
         return res.redirect(redirectUrl);

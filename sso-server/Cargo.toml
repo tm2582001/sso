@@ -13,3 +13,8 @@ serde_urlencoded="0.7"
 url="2.5"
 actix-session={ version = "0.10", features = ["cookie-session"] }
 uuid={version = "1.17", features = ["v4", "serde"]}
+jsonwebtoken="9"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+dotenvy="0.15"
+
+[dev-dependencies]

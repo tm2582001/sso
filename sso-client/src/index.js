@@ -13,7 +13,6 @@ const app = express();
 
 const configuration = buildConfiguration();
 
-
 app.set("loginUrl", configuration.application.loginUrl);
 app.set("jwtUrl", configuration.application.jwtUrl);
 

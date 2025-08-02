@@ -1,21 +1,18 @@
-use std::collections::HashSet;
-use std::sync::LazyLock;
-
 use actix_session::Session;
 use actix_web::http::header::{ContentType, LOCATION};
 use actix_web::{HttpResponse, web};
 use tera::{Context, Tera};
 
 use crate::utils::LoginRequest;
+use crate::models::{ALLOWED_DOMAINS, Shared, TokenCache};
 
-static ALLOWED_DOMAINS: LazyLock<HashSet<&'static str>> =
-    LazyLock::new(|| HashSet::from(["http://localhost:8080"]));
 
 
 pub async fn login_form(
     tera: web::Data<Tera>,
     login_request: web::Query<LoginRequest>,
     session: Session,
+    sso_cache: web::Data<Shared<TokenCache>>
 ) -> HttpResponse {
     let context = Context::new();
     let login_page = tera.render("login.html", &context).unwrap();
@@ -50,14 +47,16 @@ pub async fn login_form(
             .finish();
     }
 
-    if session
+    if let Some(user_id) = session
         .get::<String>("user")
-        .expect("error while getting session")
-        .is_some()
+        .expect("error while getting session")  
     {
         if let Some(url) = service_url {
-            // let requested_url = url::Url::parse(&url).unwrap();
+            let requested_url = url::Url::parse(&url).unwrap();
             let intrimid = uuid::Uuid::new_v4();
+
+            let mut cache = sso_cache.lock().unwrap();
+            cache.store_application_in_cache(requested_url.origin().ascii_serialization(), user_id, intrimid.to_string());
 
             let redirect_url = format!("{}?ssoToken={}", url, intrimid);
 
