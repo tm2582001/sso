@@ -1,5 +1,8 @@
 use actix_web::http::header::ContentType;
 use actix_web::{App, HttpResponse, HttpServer, web};
+use actix_web::cookie::Key;
+use actix_session::SessionMiddleware;
+use actix_session::storage::CookieSessionStore;
 use env_logger::Env;
 use tera::{Context, Tera};
 
@@ -26,10 +29,17 @@ async fn main() -> Result<(), std::io::Error> {
 
     env_logger::init_from_env(Env::default().default_filter_or("info"));
 
+    let secret_key = Key::generate();
+
+
     HttpServer::new(move || {
         App::new()
             .app_data(tera.clone())
             .wrap(actix_web::middleware::Logger::default())
+            .wrap(SessionMiddleware::new(
+                CookieSessionStore::default(),
+                secret_key.clone(),
+            ))
             .route("/", web::get().to(hello_world))
             .service(
                 web::scope("/v1")

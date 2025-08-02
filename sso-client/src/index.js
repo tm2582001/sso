@@ -7,6 +7,7 @@ import session from "express-session";
 
 import buildConfiguration from "./utils/configuration.util.js";
 import isAuthenticated from "./middlewares/isAuthenticated.middleware.js";
+import ssoRedirect from "./middlewares/ssoRedirect.middleware.js";
 
 const app = express();
 
@@ -14,6 +15,7 @@ const configuration = buildConfiguration();
 
 
 app.set("loginUrl", configuration.application.loginUrl);
+app.set("jwtUrl", configuration.application.jwtUrl);
 
 app.use(
   session({
@@ -24,9 +26,10 @@ app.use(
   })
 );
 
-app.use(isAuthenticated);
+app.use(ssoRedirect);
 
-app.get("/", (req, res) => {
+
+app.get("/", isAuthenticated, (req, res) => {
   res.send("Hello World");
 });
 
